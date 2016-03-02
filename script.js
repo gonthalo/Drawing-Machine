@@ -7,6 +7,7 @@ var pausa = false;
 var screen_width = lienzo.width;
 var screen_height = lienzo.height;
 var lineas = true;
+var record = false;
 
 function signo(x){
 	if (x<0){
@@ -78,6 +79,12 @@ function Rueda(ancla_, n_, phi_, linked_) {
 }
 
 Eje.prototype.mover = function() {
+	if (record){
+		pluma.fillStyle = "red";
+		pluma.beginPath();
+		pluma.arc(screen_width/2 + parseInt(this.y), screen_height/2 - parseInt(this.x), 1, 0, 2*Math.PI);
+		pluma.stroke();
+	}
 	if (this.ancla == -1){
 		return;
 	}
@@ -110,21 +117,34 @@ Rueda.prototype.mover = function() {
 
 //Definicion del mecanismo
 
-var p_P = [-300, 200];
-var p_Q = [200, 0];
-var d = 80;
-var r = 80;
-var n = 28;
-var m = 39;
+var p_P = [-100, 200];
+var p_Q = [200, 100];
+var d1 = 160;
+var r1 = 120;
+var r2 = 50;
+var n1 = 11;
+var n2 = 23;
+var m = 55;
 var engranajes = [];
-var id_pluma = 5;
-
+var id_pluma = 7;
+/*
 engranajes[0] = new Eje(p_P[0], p_P[1], -1, 0);
 engranajes[1] = new Eje(p_Q[0], p_Q[1], -1, 0);
-engranajes[2] = new Rueda(1, n, 0, -1);
-engranajes[3] = new Eje(0, 0, 2, r);
+engranajes[2] = new Rueda(1, n1, 0, -1);
+engranajes[3] = new Eje(0, 0, 2, r1);
 engranajes[4] = new Barra(3, 0, [0, 0]);
-engranajes[5] = new Eje(0, 0, 4, d);
+engranajes[5] = new Eje(0, 0, 4, d1);
+*/
+
+engranajes[0] = new Eje(p_P[0], p_P[1], -1, 0);
+engranajes[1] = new Rueda(0, n2, 0, -1);
+engranajes[2] = new Eje(0, 0, 1, r2);
+engranajes[3] = new Eje(p_Q[0], p_Q[1], -1, 0);
+engranajes[4] = new Rueda(3, n1, 0, -1);
+engranajes[5] = new Eje(0, 0, 4, r1);
+engranajes[6] = new Barra(5, 2, [0, 0]);
+engranajes[7] = new Eje(0, 0, 6, d1);
+
 
 var punto_w = mover();
 
@@ -132,10 +152,6 @@ function mover(){
 	for (var ii=0; ii<engranajes.length; ii++){
 		engranajes[ii].mover();
 	}
-	//var alfa = 2*Math.PI*(tiempo/n - parseInt(tiempo/n));
-	//var p_A = sum(p_Q, prod(r, girar([1, 0], alfa)));
-	//var v_AP = normal(res(p_P, p_A));
-	//var p_L = sum(p_A, prod(d, v_AP));
 	var p_L = [engranajes[id_pluma].x, engranajes[id_pluma].y];
 	var beta = 2*Math.PI*(tiempo/m - parseInt(tiempo/m));
 	console.log(p_L);
@@ -147,16 +163,20 @@ function magia(){
 		return
 	}
 	tiempo = tiempo + dt;
+	if (record){
+		//borrar();
+	}
 	var punto = mover();
 	pluma.fillStyle = "black";
+	pluma.beginPath();
+	pluma.stroke();
 	if (lineas){
-		pluma.moveTo(screen_width/2 + punto_w[0], screen_height/2 - punto_w[1]);
-		pluma.lineTo(screen_width/2 + punto[0], screen_height/2 - punto[1]);
+		pluma.moveTo(screen_width/2 + punto_w[1], screen_height/2 - punto_w[0]);
+		pluma.lineTo(screen_width/2 + punto[1], screen_height/2 - punto[0]);
 		pluma.stroke();
 	} else {
 		pluma.beginPath();
-		//pluma.arc(500 + parseInt(punto[0]), 300 - parseInt(punto[1]), 2, 0, 2*Math.PI);
-		pluma.arc(500 + parseInt(punto[0]), 300 - parseInt(punto[1]), 1, 0, 2*Math.PI);
+		pluma.arc(screen_width/2 + parseInt(punto[1]), screen_height/2 - parseInt(punto[0]), 1, 0, 2*Math.PI);
 		pluma.stroke();
 	}
 	punto_w = punto;
@@ -171,4 +191,4 @@ function reset(){
 	tiempo = 0;
 }
 
-window.setInterval(magia, 10)
+window.setInterval(magia, 5)
