@@ -1,0 +1,13 @@
+#div1 {
+	padding-top: 5px;
+	padding-bottom: 2px;
+	padding-right: 170px;
+	padding-left: 170px;
+}
+#div2 {
+	padding: none;
+	border: 2px solid rgb(5,200,100);
+}
+#lienzo {
+	margin: none;
+}
