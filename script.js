@@ -12,6 +12,8 @@ var record = false;
 var engranajes = [];
 var raton = [-1, -1];
 var square_size = 30;
+var diagrams = true;
+var master_radius = 120;
 
 function signo(x){
 	if (x<0){
@@ -21,6 +23,10 @@ function signo(x){
 }
 
 //Funciones auxilares de geometría
+
+function segm(p1, p2){
+	return Math.sqrt((p1[0] - p2[0])*(p1[0] - p2[0]) + (p1[1] - p2[1])*(p1[1] - p2[1]));
+}
 
 function prod(k, vec){
 	var vec2 = [];
@@ -63,6 +69,7 @@ function Eje(x_, y_, ancla_, d_) {
 	this.y = x_;
 	this.ancla = ancla_;
 	this.d = d_;
+	this.tipo = "eje";
 }
 
 function Barra(fijo_, movil_, v_) {
@@ -79,7 +86,12 @@ function Rueda(ancla_, n_, phi_, linked_) {
 	this.phi = phi_;
 	this.linked = linked_;
 	this.tipo = "rueda";
-	this.p = [engranajes[this.ancla].x, engranajes[this.ancla].y];
+	if (this.ancla == -1){
+		this.p = [0, 0];
+	} else {
+		this.p = [engranajes[this.ancla].x, engranajes[this.ancla].y];
+	}
+	this.radio = 0;
 }
 
 Eje.prototype.mover = function() {
@@ -112,8 +124,12 @@ Barra.prototype.mover = function() {
 }
 
 Rueda.prototype.mover = function() {
-	this.p = [engranajes[this.ancla].x, engranajes[this.ancla].y];
 	this.phi = 2*Math.PI*(tiempo/this.n - parseInt(tiempo/this.n));
+	if (this.ancla == -1){
+		this.phi *= -1;
+		return;
+	}
+	this.p = [engranajes[this.ancla].x, engranajes[this.ancla].y];
 	if (this.linked != -1){
 		this.phi = -this.phi*signo(engranajes[linked].phi);
 	}
@@ -161,10 +177,10 @@ function spike(n){
 	return n/10.0;
 }
 
-function radial_f(x0, y0, r, n, k, r0){
-	pluma.moveTo(x0 + r0 + k*r(0), y0);
+function radial_f(x0, y0, r, n, k, r0, phi0){
+	pluma.moveTo(x0 + (r0 + k*r(0))*Math.cos(phi0), y0 + (r0 + k*r(0))*Math.sin(phi0));
 	for (var ii = 1; ii<=20*n; ii++){
-		pluma.lineTo(x0 + (k*r(ii%20) + r0)*Math.cos(ii*Math.PI/10/n), y0 + (k*r(ii%20) + r0)*Math.sin(ii*Math.PI/10/n));
+		pluma.lineTo(x0 + (k*r(ii%20) + r0)*Math.cos(ii*Math.PI/10/n + phi0), y0 + (k*r(ii%20) + r0)*Math.sin(ii*Math.PI/10/n + phi0));
 	}
 	pluma.stroke();
 }
@@ -178,7 +194,7 @@ function show_sym(name){
 	pluma.fillStyle = rgbstr(randcol());//"rgb(5, 200, 100)";
 	make_square(xx, yy);
 	if (name=="rueda"){
-		radial_f(xx, yy, gear, 7, square_size/5, square_size/1.8);
+		radial_f(xx, yy, gear, 7, square_size/5, square_size/1.8, 0);
 	}
 	if (name=="eje"){
 		pluma.beginPath();
@@ -201,17 +217,30 @@ Eje.prototype.diagrama = function() {
 	pluma.beginPath();
 	pluma.arc(screen_width/2 + this.x, screen_height/2 + this.y, 20/8, 0, 2*Math.PI);
 	pluma.fill();
-	pluma.moveTo(screen_width/2 + this.x + 20/2, screen_height/2 + this.y);
-	pluma.lineTo(screen_width/2 + this.x - 20/2, screen_height/2 + this.y);
+	pluma.moveTo(screen_width/2 + this.x, screen_height/2 + this.y + 20/2);
+	pluma.lineTo(screen_width/2 + this.x, screen_height/2 + this.y - 20/2);
 	pluma.stroke();
 };
 
 Barra.prototype.diagrama = function() {
-	
+	alfa = this.v[0];
+	beta = this.v[1];
+	pluma.beginPath();
+	pluma.moveTo(screen_width/2 + this.p[0] + screen_height*alfa - 10*beta, screen_height/2 + this.p[1] + screen_height*beta + 10*alfa);
+	pluma.lineTo(screen_width/2 + this.p[0] - 10*beta, screen_height/2 + this.p[1] + 10*alfa);
+	pluma.arcTo(screen_width/2 + this.p[0] - 10*alfa - 10*beta, screen_height/2 + this.p[1] + 10*alfa - 10*beta, screen_width/2 + this.p[0] - 10*alfa, screen_height/2 + this.p[1] - 10*beta, 10);
+	pluma.arcTo(screen_width/2 + this.p[0] + 10*beta - 10*alfa, screen_height/2 + this.p[1] - 10*alfa - 10*beta, screen_width/2 + this.p[0] + 10*beta, screen_height/2 + this.p[1] - 10*alfa, 10);
+	pluma.lineTo(screen_width/2 + this.p[0] + 10*beta + screen_height*alfa, screen_height/2 + this.p[1] - 10*alfa + screen_height*beta);
+	pluma.stroke();
 };
 
 Rueda.prototype.diagrama = function() {
-	radial_f(screen_width/2 + this.p[0], screen_height/2 + this.p[1], gear, this.n, 20, this.n*10/Math.PI);
+	if (this.linked == -1){
+		this.radio = -segm(this.p, [0, 0]) + 20 + master_radius;
+	} else {
+		this.radio = segm(this.p, engranajes[this.linked].p) - 20 - engranajes[this.linked].radius;
+	}
+	radial_f(screen_width/2 + this.p[0], screen_height/2 + this.p[1], spike, this.n, 20, this.radio, this.phi);
 };
 
 //Input y construccion del mecanismo
@@ -233,11 +262,6 @@ function get_click (e){
 }
 
 function get_id(xx, yy){
-	/*raton = [-1, -1];
-	while (raton[0] == -1){
-		setTimeout(function(){
-    	}, 200);
-	}*/
 	return parseInt(yy/square_size/3) + parseInt(screen_height/square_size/3)*parseInt(xx/square_size/3);
 }
 
@@ -291,6 +315,8 @@ var n1 = 16;
 var n2 = 23;
 var m = 56;
 var id_pluma = 7;
+var origin = new Eje(0, 0, -1, 0);
+var master_wheel = new Rueda(-1, m, 0, -1);
 
 /*
 engranajes[0] = new Eje(p_P[0], p_P[1], -1, 0);
@@ -325,11 +351,19 @@ function mover(){
 
 function magia(){
 	if (pausa){
-		return
+		return;
 	}
 	tiempo = tiempo + dt;
-	if (record){
-		//borrar();
+	if (diagrams){
+		borrar();
+		mover();
+		for (var ii=0; ii<engranajes.length; ii++){
+			engranajes[ii].diagrama();
+		}
+		master_wheel.mover();
+		master_wheel.diagrama();
+		origin.diagrama();
+		return;
 	}
 	var punto = mover();
 	pluma.fillStyle = "black";
@@ -354,6 +388,14 @@ function borrar(){
 
 function reset(){
 	tiempo = 0;
+}
+
+function mecanismo(){
+	diagrams = !diagrams;
+	pluma.beginPath();
+	pluma.stroke();
+	punto_w = mover();
+	borrar();
 }
 
 window.setInterval(magia, 5)
