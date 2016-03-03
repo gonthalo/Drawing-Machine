@@ -1,6 +1,7 @@
 
 var lienzo = document.getElementById("canvas");
 var pluma = lienzo.getContext("2d");
+var carta = document.getElementById("messages");
 var tiempo = 0;
 var dt = 0.2;
 var pausa = false;
@@ -8,6 +9,8 @@ var screen_width = lienzo.width;
 var screen_height = lienzo.height;
 var lineas = true;
 var record = false;
+var engranajes = [];
+var raton = [-1, -1];
 
 function signo(x){
 	if (x<0){
@@ -115,18 +118,56 @@ Rueda.prototype.mover = function() {
 	}
 }
 
-//Definicion del mecanismo
+//Input y construccion del mecanismo
+
+function get_click (e){
+	var x;
+	var y;
+	if (e.pageX || e.pageY) {
+		x = e.pageX;
+		y = e.pageY;
+	} else {
+		x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+		y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+	}
+	x -= lienzo.offsetLeft;
+	y -= lienzo.offsetTop;
+	console.log(x, y);
+	raton = [x, y];
+}
+
+function get_id(){
+	while (raton[0] == -1){
+		//do nothing
+	}
+	return 0;
+}
+
+function crear(nombre){
+	if (nombre=="rueda"){
+		n_dientes = window.prompt("Nº de dientes:");
+		id_eje = get_id();
+		if (id_eje == -1){
+			return;
+		}
+		id_linked = get_id();
+		if (id_linked == -1){
+			return;
+		}
+		engranajes[engranajes.length] = Rueda()
+	}
+}
 
 var p_P = [-100, 200];
 var p_Q = [200, 100];
 var d1 = 160;
 var r1 = 120;
 var r2 = 50;
-var n1 = 11;
+var n1 = 16;
 var n2 = 23;
-var m = 55;
-var engranajes = [];
+var m = 56;
 var id_pluma = 7;
+
 /*
 engranajes[0] = new Eje(p_P[0], p_P[1], -1, 0);
 engranajes[1] = new Eje(p_Q[0], p_Q[1], -1, 0);
