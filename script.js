@@ -12,7 +12,7 @@ var record = false;
 var engranajes = [];
 var raton = [-1, -1];
 var square_size = 30;
-var diagrams = true;
+var diagrams = false;
 var master_radius = 120;
 
 function signo(x){
