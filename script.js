@@ -398,4 +398,6 @@ function mecanismo(){
 	borrar();
 }
 
+borrar();
+
 window.setInterval(magia, 5)
