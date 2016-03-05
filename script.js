@@ -1,6 +1,7 @@
 
 var lienzo = document.getElementById("canvas");
 var pluma = lienzo.getContext("2d");
+pluma.font = "16px Verdana";
 var carta = document.getElementById("messages");
 var tiempo = 0;
 var dt = 0.2;
@@ -10,10 +11,10 @@ var screen_height = lienzo.height;
 var lineas = true;
 var record = false;
 var engranajes = [];
-var raton = [-1, -1];
 var square_size = 30;
-var diagrams = false;
+var diagrams = true;
 var master_radius = 120;
+var dcha_x = screen_width - 3*square_size/2;
 
 function signo(x){
 	if (x<0){
@@ -139,7 +140,7 @@ Rueda.prototype.mover = function() {
 
 function randcol(){
 	var lis = [parseInt(Math.random()*3 + 1)*85, parseInt(Math.random()*3 + 1)*85, parseInt(Math.random()*3 + 1)*85];
-	if (lis[0] + lis[1] + lis[2]==0){
+	if (lis[0] == lis[1] && lis[1] == lis[2] && lis[2] == lis[0]){
 		return randcol();
 	}
 	return lis;
@@ -185,29 +186,60 @@ function radial_f(x0, y0, r, n, k, r0, phi0){
 	pluma.stroke();
 }
 
-function show_sym(name){
+function eje_sym(xx, yy, text){
+	pluma.beginPath();
+	pluma.arc(xx - square_size/3.5, yy, square_size/4, 0, 2*Math.PI);
+	pluma.stroke();
+	pluma.beginPath();
+	pluma.arc(xx - square_size/3.5, yy, square_size/8, 0, 2*Math.PI);
+	pluma.fill();
+	pluma.moveTo(xx - square_size/3.5, yy + square_size/2);
+	pluma.lineTo(xx - square_size/3.5, yy - square_size/2);
+	pluma.stroke();
+	pluma.fillText(text, xx - 5 + square_size/3, yy + 5);
+}
+
+function barra_sym(xx, yy, text){
+	var ra = square_size/4;
+	var cx = xx - square_size/3;
+	var cy = yy + square_size/2;
+	pluma.beginPath();
+	pluma.moveTo(cx - ra, yy - 2*square_size/3);
+	pluma.lineTo(cx - ra, cy);
+	pluma.arcTo(cx - ra, cy + ra, cx, cy + ra, ra);
+	pluma.arcTo(cx + ra, cy + ra, cx + ra, cy, ra);
+	pluma.lineTo(cx + ra, yy - 2*square_size/3);
+	pluma.stroke();
+	pluma.beginPath();
+	pluma.arc(cx, cy, ra/2, 0, 2*Math.PI);
+	pluma.fill();
+	pluma.beginPath();
+	pluma.arc(cx, yy - square_size/3, ra/2, 0, 2*Math.PI);
+	pluma.fill();
+	pluma.fillText(text, xx - 5 + square_size/3, yy + 5);
+}
+
+function show_sym(name, colorin, index){
 	var stack = parseInt(screen_height/square_size/3);
-	var yy = engranajes.length%stack + 0.5;
-	var xx = parseInt(engranajes.length/stack) + 0.5;
+	var yy = index%stack + 0.5;
+	var xx = parseInt(index/stack) + 0.5;
 	xx = xx*3*square_size;
 	yy = yy*3*square_size;
-	pluma.fillStyle = rgbstr(randcol());//"rgb(5, 200, 100)";
+	pluma.fillStyle = colorin;//"rgb(5, 200, 100)";
 	make_square(xx, yy);
+	pluma.fillStyle = "black";
 	if (name=="rueda"){
 		radial_f(xx, yy, gear, 7, square_size/5, square_size/1.8, 0);
+		pluma.fillText(index, xx - 5, yy + 5);
 	}
 	if (name=="eje"){
-		pluma.beginPath();
-		pluma.arc(xx, yy, square_size/4, 0, 2*Math.PI);
 		pluma.stroke();
-		pluma.beginPath();
-		pluma.arc(xx, yy, square_size/8, 0, 2*Math.PI);
-		pluma.fill();
-		pluma.moveTo(xx + square_size/2, yy);
-		pluma.lineTo(xx - square_size/2, yy);
-		pluma.stroke();
+		eje_sym(xx, yy, index);
 	}
-	if (name=="barra"){}
+	if (name=="barra"){
+		pluma.stroke();
+		barra_sym(xx, yy, index);
+	}
 }
 
 Eje.prototype.diagrama = function() {
@@ -258,7 +290,23 @@ function get_click (e){
 	x -= lienzo.offsetLeft;
 	y -= lienzo.offsetTop;
 	console.log(x, y);
-	raton = [x, y];
+	y = parseInt(y/square_size - 0.5);
+	if (y%3 == 2){
+		return;
+	}
+	if (Math.abs(x - dcha_x) < square_size){
+		if (parseInt(y/3) == 0){
+			crear("eje");
+		}
+		if (parseInt(y/3) == 1){
+			crear("barra");
+		}
+		if (parseInt(y/3) == 2){
+			crear("rueda");
+		}
+		return;
+	}
+	
 }
 
 function get_id(xx, yy){
@@ -266,7 +314,8 @@ function get_id(xx, yy){
 }
 
 function crear(nombre){
-	show_sym(nombre);
+	var color_random = rgbstr(randcol());
+	show_sym(nombre, color_random, engranajes.length);
 	if (nombre=="rueda"){
 		var n_dientes = parseInt(window.prompt("Nº de dientes:"));
 		var id_eje = parseInt(window.prompt("Eje de giro:"));
@@ -303,6 +352,7 @@ function crear(nombre){
 		var e_libre = parseInt(window.prompt("Eje libre:"));
 		engranajes[engranajes.length] = new Barra(e_fijo, e_libre, [0, 0]);
 	}
+	engranajes[engranajes.length - 1].color = color_random;
 	engranajes[engranajes.length - 1].diagrama();
 }
 
@@ -336,6 +386,9 @@ engranajes[5] = new Eje(0, 0, 4, r1);
 engranajes[6] = new Barra(5, 2, [0, 0]);
 engranajes[7] = new Eje(0, 0, 6, d1);
 
+for (var ii = 0; ii<8; ii++){
+	engranajes[ii].color = rgbstr(randcol());
+}
 
 var punto_w = mover();
 
@@ -357,12 +410,24 @@ function magia(){
 	if (diagrams){
 		borrar();
 		mover();
+		pluma.fillStyle = "black";
 		for (var ii=0; ii<engranajes.length; ii++){
+			show_sym(engranajes[ii].tipo, engranajes[ii].color, ii);
 			engranajes[ii].diagrama();
 		}
 		master_wheel.mover();
 		master_wheel.diagrama();
 		origin.diagrama();
+		pluma.fillStyle = "white";
+		for (var ii=0; ii<3; ii++){
+			make_square(dcha_x, 3*square_size*(ii + 0.5));
+			pluma.stroke();
+		}
+		pluma.fillStyle = "black";
+		eje_sym(dcha_x, 1.5*square_size, "+");
+		barra_sym(dcha_x, 4.5*square_size, "+");
+		radial_f(dcha_x, 7.5*square_size, gear, 7, square_size/5, square_size/1.8, 0);
+		pluma.fillText("+", dcha_x - 6, 7.5*square_size + 5);
 		return;
 	}
 	var punto = mover();
@@ -387,7 +452,11 @@ function borrar(){
 }
 
 function reset(){
+	pluma.beginPath();
+	pluma.stroke();
 	tiempo = 0;
+	punto_w = mover();
+	borrar();
 }
 
 function mecanismo(){
