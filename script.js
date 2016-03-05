@@ -132,7 +132,7 @@ Rueda.prototype.mover = function() {
 	}
 	this.p = [engranajes[this.ancla].x, engranajes[this.ancla].y];
 	if (this.linked != -1){
-		this.phi = -this.phi*signo(engranajes[linked].phi);
+		this.phi = -this.phi*signo(engranajes[this.linked].phi);
 	}
 }
 
@@ -270,7 +270,8 @@ Rueda.prototype.diagrama = function() {
 	if (this.linked == -1){
 		this.radio = -segm(this.p, [0, 0]) + 20 + master_radius;
 	} else {
-		this.radio = segm(this.p, engranajes[this.linked].p) - 20 - engranajes[this.linked].radius;
+		this.radio = segm(this.p, engranajes[this.linked].p) - Math.abs(engranajes[this.linked].radio);
+		this.radio += -signo(this.radio)*20;
 	}
 	radial_f(screen_width/2 + this.p[0], screen_height/2 + this.p[1], spike, this.n, 20, this.radio, this.phi);
 };
@@ -306,7 +307,7 @@ function get_click (e){
 		}
 		return;
 	}
-	
+
 }
 
 function get_id(xx, yy){
@@ -336,8 +337,8 @@ function crear(nombre){
 		var ancla = -1;
 		var dist = 0;
 		if (ref == "ninguno"){
-			xx = parseInt(window.prompt("Coordenada X:"));
-			yy = parseInt(window.prompt("Coordenada Y:"));
+			yy = parseInt(window.prompt("Coordenada X:"));
+			xx = parseInt(window.prompt("Coordenada Y:"));
 		} else {
 			ref = parseInt(ref);
 			ancla = ref;
@@ -354,6 +355,11 @@ function crear(nombre){
 	}
 	engranajes[engranajes.length - 1].color = color_random;
 	engranajes[engranajes.length - 1].diagrama();
+}
+
+function creacion(){
+	nombre = window.prompt("Tipo de pieza:");
+	crear(nombre);
 }
 
 var p_P = [-100, 200];
@@ -398,7 +404,7 @@ function mover(){
 	}
 	var p_L = [engranajes[id_pluma].x, engranajes[id_pluma].y];
 	var beta = 2*Math.PI*(tiempo/m - parseInt(tiempo/m));
-	console.log(p_L);
+	//console.log(p_L);
 	return girar(p_L, -beta);
 }
 
