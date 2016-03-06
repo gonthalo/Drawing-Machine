@@ -11,16 +11,17 @@ var screen_height = lienzo.height;
 var lineas = true;
 var record = false;
 var engranajes = [];
-var square_size = 30;
+var square_size = 24;
 var diagrams = true;
 var master_radius = 120;
 var dcha_x = screen_width - 3*square_size/2;
+var tooth_size = 12;
 
 function signo(x){
 	if (x<0){
-		return -x;
+		return -1;
 	}
-	return x;
+	return 1;
 }
 
 //Funciones auxilares de geometría
@@ -230,11 +231,19 @@ function show_sym(name, colorin, index){
 	pluma.fillStyle = "black";
 	if (name=="rueda"){
 		radial_f(xx, yy, gear, 7, square_size/5, square_size/1.8, 0);
-		pluma.fillText(index, xx - 5, yy + 5);
+		if (index < 10){
+			pluma.fillText(index, xx - 5, yy + 5);
+		} else {
+			pluma.fillText(index, xx - 10, yy + 5);
+		}
 	}
 	if (name=="eje"){
 		pluma.stroke();
-		eje_sym(xx, yy, index);
+		if (index < 10){
+			eje_sym(xx, yy, index);
+		} else {
+			eje_sym(xx - 5, yy, index);
+		}
 	}
 	if (name=="barra"){
 		pluma.stroke();
@@ -268,15 +277,115 @@ Barra.prototype.diagrama = function() {
 
 Rueda.prototype.diagrama = function() {
 	if (this.linked == -1){
-		this.radio = -segm(this.p, [0, 0]) + 20 + master_radius;
+		this.radio = -segm(this.p, [0, 0]) + tooth_size + master_radius;
 	} else {
 		this.radio = segm(this.p, engranajes[this.linked].p) - Math.abs(engranajes[this.linked].radio);
-		this.radio += -signo(this.radio)*20;
+		this.radio += -signo(this.radio)*tooth_size;
 	}
-	radial_f(screen_width/2 + this.p[0], screen_height/2 + this.p[1], spike, this.n, 20, this.radio, this.phi);
+	radial_f(screen_width/2 + this.p[0], screen_height/2 + this.p[1], spike, this.n, tooth_size, this.radio, this.phi);
 };
 
 //Input y construccion del mecanismo
+
+function get_id(xx, yy){
+	return parseInt(yy/square_size/3) + parseInt(screen_height/square_size/3)*parseInt(xx/square_size/3);
+}
+
+function quitar(acting){
+	console.log(acting);
+	delete engranajes[acting];
+	for (var ii=acting + 1; ii<engranajes.length; ii++){
+		var recycle = (engranajes[ii].movil == acting || engranajes[ii].fijo == acting || engranajes[ii].linked == acting || engranajes[ii].ancla == acting)
+		console.log([ii, recycle]);
+		if (!recycle){
+			if (engranajes[ii].tipo == "rueda"){
+				if (engranajes[ii].ancla > acting){
+					engranajes[ii].ancla -= 1;
+				}
+				if (engranajes[ii].linked > acting){
+					engranajes[ii].linked -= 1;
+				}
+			}
+			if (engranajes[ii].tipo == "eje"){
+				if (engranajes[ii].ancla > acting){
+					engranajes[ii].ancla -= 1;
+				}
+			}
+			if (engranajes[ii].tipo == "barra"){
+				if (engranajes[ii].fijo > acting){
+					engranajes[ii].fijo -= 1;
+				}
+				if (engranajes[ii].movil > acting){
+					engranajes[ii].movil -= 1;
+				}
+			}
+		} else {
+			quitar(ii);
+		}
+	}
+	engranajes.splice(acting, 1);
+}
+
+function cambiar(acting){
+	var color_random = engranajes[acting].color;
+	if (engranajes[acting].tipo=="rueda"){
+		var id_eje = parseInt(window.prompt("Eje de giro:", engranajes[acting].ancla));
+		if (id_eje == -1 || id_eje>=engranajes.length){
+			return;
+		}
+		var id_linked = parseInt(window.prompt("Rueda ligada:", engranajes[acting].linked));
+		var n_dientes = parseInt(window.prompt("Nº de dientes:", engranajes[acting].n));
+		if (n_dientes == -1){
+			var p = [engranajes[id_eje].x, engranajes[id_eje].y];
+			if (id_linked == -1){
+				n_dientes = parseInt(m/master_radius*(segm(p, [0, 0]) - master_radius - tooth_size));
+			} else {
+				n_dientes = parseInt(m/engranajes[id_linked].radio*(Math.abs(engranajes[id_linked].radio) - segm(p, engranajes[id_linked].p) - tooth_size));
+			}
+		}
+		engranajes[acting] = new Rueda(id_eje, n_dientes, 0, id_linked);
+	}
+	if (engranajes[acting].tipo=="eje"){
+		var predet = engranajes[acting].ancla;
+		if (predet == -1){
+			predet = "ninguno";
+		}
+		var ref = window.prompt("Objeto anclado:", predet);
+		if (ref<0 || ref>=engranajes.length){
+			return;
+		}
+		var xx = 0;
+		var yy = 0;
+		var ancla = -1;
+		var dist = 0;
+		if (ref == "ninguno"){
+			yy = parseInt(window.prompt("Coordenada X:", engranajes[acting].x));
+			xx = parseInt(window.prompt("Coordenada Y:", engranajes[acting].y));
+		} else {
+			ref = parseInt(ref);
+			ancla = ref;
+			dist = parseInt(window.prompt("Distancia o Radio:", engranajes[acting].d));
+			xx = engranajes[ref].p[0] + dist;
+			yy = engranajes[ref].p[1];
+		}
+		engranajes[acting] = new Eje(xx, yy, ancla, dist);
+	}
+	if (engranajes[acting].tipo == "barra"){
+		var e_fijo = parseInt(window.prompt("Eje fijo:", engranajes[acting].fijo));
+		var e_libre = parseInt(window.prompt("Eje libre:", engranajes[acting].movil));
+		engranajes[acting] = new Barra(e_fijo, e_libre, [0, 0]);
+	}
+	engranajes[acting].color = color_random;
+}
+
+function boton(texto, funcion){
+	return '<input type="button" onclick="' + funcion + '" value="' + texto + '">';
+}
+
+function act(index){
+	messages.innerHTML = boton("Quitar el objeto " + index, "quitar(" + index + ")");
+	messages.innerHTML += boton("Cambiar el objeto " + index, "cambiar(" + index + ")");
+}
 
 function get_click (e){
 	var x;
@@ -291,40 +400,48 @@ function get_click (e){
 	x -= lienzo.offsetLeft;
 	y -= lienzo.offsetTop;
 	console.log(x, y);
-	y = parseInt(y/square_size - 0.5);
-	if (y%3 == 2){
-		return;
+	yyy = parseInt(y/square_size - 0.5);
+	xxx = parseInt(x/square_size - 0.5);
+	if (yyy%3 != 2){
+		if (Math.abs(x - dcha_x) < square_size){
+			if (parseInt(yyy/3) == 0){
+				crear("eje");
+			}
+			if (parseInt(yyy/3) == 1){
+				crear("barra");
+			}
+			if (parseInt(yyy/3) == 2){
+				crear("rueda");
+			}
+			return;
+		}
+		if (parseInt(screen_height/square_size/3)*parseInt(xxx/3) + parseInt(yyy/3) < engranajes.length && xxx%3 != 2){
+			act(get_id(x, y));
+			return;
+		}
 	}
-	if (Math.abs(x - dcha_x) < square_size){
-		if (parseInt(y/3) == 0){
-			crear("eje");
-		}
-		if (parseInt(y/3) == 1){
-			crear("barra");
-		}
-		if (parseInt(y/3) == 2){
-			crear("rueda");
-		}
-		return;
-	}
-
-}
-
-function get_id(xx, yy){
-	return parseInt(yy/square_size/3) + parseInt(screen_height/square_size/3)*parseInt(xx/square_size/3);
+	engranajes[engranajes.length] = new Eje(y - screen_height/2, x - screen_width/2, -1, 0);
+	engranajes[engranajes.length - 1].color = rgbstr(randcol());
 }
 
 function crear(nombre){
 	var color_random = rgbstr(randcol());
-	show_sym(nombre, color_random, engranajes.length);
+	//show_sym(nombre, color_random, engranajes.length);
 	if (nombre=="rueda"){
-		var n_dientes = parseInt(window.prompt("Nº de dientes:"));
 		var id_eje = parseInt(window.prompt("Eje de giro:"));
 		if (id_eje == -1 || id_eje>=engranajes.length){
 			return;
 		}
 		var id_linked = parseInt(window.prompt("Rueda ligada:"));
-		if (id_linked == -1){};
+		var n_dientes = parseInt(window.prompt("Nº de dientes:"));
+		if (n_dientes == -1){
+			var p = [engranajes[id_eje].x, engranajes[id_eje].y];
+			if (id_linked == -1){
+				n_dientes = parseInt(m/master_radius*(segm(p, [0, 0]) - master_radius - tooth_size));
+			} else {
+				n_dientes = parseInt(m/engranajes[id_linked].radio*(Math.abs(engranajes[id_linked].radio) - segm(p, engranajes[id_linked].p) - tooth_size));
+			}
+		}
 		engranajes[engranajes.length] = new Rueda(id_eje, n_dientes, 0, id_linked);
 	}
 	if (nombre=="eje"){
