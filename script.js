@@ -583,6 +583,11 @@ function reset(){
 }
 
 function mecanismo(){
+	if (diagrams){
+		document.getElementById("boton").value = "Ver mecanismo";
+	} else {
+		document.getElementById("boton").value = "Ver dibujo";
+	}
 	diagrams = !diagrams;
 	pluma.beginPath();
 	pluma.stroke();
