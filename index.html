@@ -4,12 +4,19 @@
 	<title>Drawing Machine</title>
 </head>
 <body background="dibujo.jpg">
-	<div style="padding-top: 5px; padding-bottom: 2px; padding-right: 170px; padding-left:170px">
-		<div style="border:2px solid rgb(5,200,100)" float="center" style="padding: none">
-			<canvas onclick="get_click(event)" id="canvas" width="1000px" height="600px" >Your browser does not render the HTML 5 canvas tag</canvas>
+	<div id="div1" style="padding-top: 5px; padding-bottom: 2px; padding-right: 170px; padding-left:170px">
+		<div id="div2" style="border:2px solid rgb(5,200,100)" float="center" style="padding: none">
+			<canvas onclick="get_click(event)" id="canvas" width="1000px" height="600px" style="margin: none">Your browser does not render the HTML 5 canvas tag</canvas>
 		</div>
-		<input type="button" onclick="pausa = !pausa" value="Pausa"><input type="button" onclick="borrar()" value="Borrar"><input type="button" onclick="lineas = !lineas" value="L&iacute;neas"><input type="button" onclick="reset()" value="Reset"><input type="button" onclick="mecanismo()" value="Mecanismo">
-		<script type="text/javascript" src="script.js"></script><p id="messages"></p>
+		<table>
+			<tr>
+				<td>
+					<input type="button" onclick="pausa = !pausa" value="Pausa"><input type="button" onclick="borrar()" value="Borrar"><input type="button" onclick="lineas = !lineas" value="L&iacute;neas"><input type="button" onclick="reset()" value="Reset"><input type="button" onclick="mecanismo()" value="Mecanismo">
+				</td>
+				<td id="messages"></td>
+			</tr>
+		</table>
+		<script type="text/javascript" src="script.js"></script>
 	</div>
 </body>
 </html>
